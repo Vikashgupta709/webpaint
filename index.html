@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Draw, Erase, and Shapes</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+
+        #colorSelector,
+        #shapeSelector {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 1;
+            position: fixed;
+        }
+
+        #pen,
+        #eraser,
+        #color,
+        #clear {
+            margin-bottom: 10px;
+        }
+
+        #canvasContainer {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        #canvas {
+            border: 1px solid #000;
+        }
+
+        .shape {
+            cursor: grab;
+        }
+    </style>
+</head>
+
+<body class="flex">
+    <div id="colorSelector" class="flex flex-col items-center justify-end p-4 fixed bg-white border-r border-gray-300 z-10 bottom-0">
+        <label for="color" class="mb-2">Select Color:</label>
+        <input type="color" id="color" value="#000000" class="mb-2 px-2 py-1 border border-gray-300 rounded">
+        <button id="pen" class="btn btn-blue">Pen</button>
+        <button id="eraser" class="btn btn-red">Eraser</button>
+        <button id="clear" class="btn btn-gray">Clear</button>
+    </div>
+    <div id="shapeSelector" class="flex flex-col items-center justify-center p-4 fixed bg-white border-l border-gray-300 z-10">
+        <p class="mb-2 font-bold">Shapes</p>
+        <div class="shape mb-2" draggable="true" ondragstart="drag(event)">Rectangle</div>
+        <div class="shape mb-2" draggable="true" ondragstart="drag(event)">Circle</div>
+        <div class="shape" draggable="true" ondragstart="drag(event)">Triangle</div>
+    </div>
+    <div id="canvasContainer" class="flex-1 flex justify-center items-center">
+        <canvas id="canvas" width="800" height="500" class="border border-gray-800" ondrop="drop(event)"
+            ondragover="allowDrop(event)" onmousedown="startDrawing(event)"
+            onmousemove="draw(event)" onmouseup="stopDrawing()" onmouseout="stopDrawing()"></canvas>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const canvas = document.getElementById("canvas");
+            const context = canvas.getContext("2d");
+            let isDrawing = false;
+            let penColor = "#000";
+            context.strokeStyle = penColor;
+            context.lineWidth = 5;
+
+            // Event listeners for shapes
+            canvas.addEventListener("drop", drop);
+            canvas.addEventListener("dragover", allowDrop);
+
+            // Event listeners for drawing
+            canvas.addEventListener("mousedown", startDrawing);
+            canvas.addEventListener("mousemove", draw);
+            canvas.addEventListener("mouseup", stopDrawing);
+            canvas.addEventListener("mouseout", stopDrawing);
+
+            // Color selector
+            const colorInput = document.getElementById("color");
+            colorInput.addEventListener("input", updatePenColor);
+
+            // Eraser button
+            const eraserButton = document.getElementById("eraser");
+            eraserButton.addEventListener("click", () => {
+                penColor = "#f0f0f0";
+                context.strokeStyle = penColor;
+                context.lineWidth = 20;
+            });
+
+            // Pen button
+            const penButton = document.getElementById("pen");
+            penButton.addEventListener("click", () => {
+                penColor = colorInput.value;
+                context.strokeStyle = penColor;
+                context.lineWidth = 5;
+            });
+
+            // Clear button
+            const clearButton = document.getElementById("clear");
+            clearButton.addEventListener("click", clearCanvas);
+
+            function startDrawing(e) {
+                isDrawing = true;
+                draw(e);
+            }
+
+            function draw(e) {
+                if (!isDrawing) return;
+                context.lineCap = "round";
+                context.lineTo(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
+                context.stroke();
+                context.beginPath();
+                context.moveTo(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
+            }
+
+            function stopDrawing() {
+                isDrawing = false;
+                context.beginPath();
+            }
+
+            function updatePenColor() {
+                penColor = colorInput.value;
+                context.strokeStyle = penColor;
+            }
+
+            function clearCanvas() {
+                context.clearRect(0, 0, canvas.width, canvas.height);
+            }
+
+            // Functions for handling shapes
+            function allowDrop(e) {
+                e.preventDefault();
+            }
+
+            function drop(e) {
+                e.preventDefault();
+                const shapeType = e.dataTransfer.getData("text");
+                const x = e.clientX - canvas.offsetLeft;
+                const y = e.clientY - canvas.offsetTop;
+                drawShape(shapeType, x, y);
+            }
+
+            function drawShape(shapeType, x, y) {
+                context.beginPath();
+                if (shapeType === "Rectangle") {
+                    context.rect(x, y, 100, 50);
+                } else if (shapeType === "Circle") {
+                    context.arc(x + 50, y + 25, 25, 0, 2 * Math.PI);
+                } else if (shapeType === "Triangle") {
+                    context.moveTo(x, y);
+                    context.lineTo(x + 50, y - 50);
+                    context.lineTo(x + 100, y);
+                    context.closePath();
+                }
+                context.stroke();
+            }
+
+            // Function for dragging shapes
+            window.drag = function (e) {
+                e.dataTransfer.setData("text", e.target.textContent);
+            };
+        });
+    </script>
+</body>
+
+</html>
